@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Ultimate Space Game",
+      "runtimeExecutable": "${workspaceFolder}/ultimate_space_game/node_modules/.bin/electron",
+      "args": ["."],
+      "cwd": "${workspaceFolder}/ultimate_space_game"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Game Over SPACE INVADER",
+  "scenes": [
+    {
+      "name": "Game Over SPACE INVADER",
+      "file": "scene.json"
+    }
+  ]
+}
