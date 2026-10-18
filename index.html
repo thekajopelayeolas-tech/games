@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080d20">
+    <title>Space Arcade — Choose Your Game</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #080d20;
+            color: #eef6ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            background:
+                radial-gradient(ellipse at 50% 5%, rgba(57, 77, 180, .34), transparent 55%),
+                radial-gradient(ellipse at 5% 65%, rgba(0, 194, 255, .12), transparent 38%),
+                #080d20;
+        }
+        body::before {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            content: "";
+            opacity: .5;
+            background-image:
+                radial-gradient(1px 1px at 10% 20%, #fff 99%, transparent),
+                radial-gradient(1px 1px at 70% 15%, #8cecff 99%, transparent),
+                radial-gradient(2px 2px at 35% 68%, #fff 99%, transparent),
+                radial-gradient(1px 1px at 88% 76%, #c9a7ff 99%, transparent),
+                radial-gradient(1px 1px at 55% 42%, #fff 99%, transparent);
+            background-size: 230px 190px, 310px 270px, 390px 320px, 280px 230px, 350px 290px;
+        }
+        main {
+            width: min(1060px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 68px 0 48px;
+        }
+        .eyebrow {
+            margin: 0 0 12px;
+            color: #77e6ff;
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .2em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        h1 {
+            margin: 0;
+            color: #f4fbff;
+            font-size: clamp(2.4rem, 7vw, 4.4rem);
+            font-weight: 900;
+            letter-spacing: -.055em;
+            line-height: 1;
+            text-align: center;
+            text-shadow: 0 0 26px rgba(47, 207, 255, .35), 0 3px 0 #25246e;
+        }
+        .intro {
+            max-width: 600px;
+            margin: 18px auto 42px;
+            color: #b9c9df;
+            font-size: 1.05rem;
+            line-height: 1.65;
+            text-align: center;
+        }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .game-card {
+            position: relative;
+            display: flex;
+            min-height: 222px;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 26px;
+            overflow: hidden;
+            border: 1px solid rgba(135, 182, 255, .23);
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(23, 36, 74, .92), rgba(12, 20, 45, .95));
+            box-shadow: 0 18px 44px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .04);
+            color: inherit;
+            text-decoration: none;
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .game-card::after {
+            position: absolute;
+            top: -60px;
+            right: -40px;
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            background: var(--accent);
+            content: "";
+            filter: blur(70px);
+            opacity: .2;
+            transition: opacity .2s ease;
+        }
+        .game-card:hover, .game-card:focus-visible {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: 0 22px 50px rgba(0, 0, 0, .38), 0 0 24px color-mix(in srgb, var(--accent) 20%, transparent);
+            outline: none;
+        }
+        .game-card:hover::after, .game-card:focus-visible::after { opacity: .34; }
+        .game-number {
+            display: inline-grid;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+            border-radius: 13px;
+            background: color-mix(in srgb, var(--accent) 14%, transparent);
+            color: var(--accent);
+            font-weight: 900;
+        }
+        .game-card h2 {
+            margin: 19px 0 7px;
+            font-size: 1.35rem;
+            letter-spacing: -.025em;
+        }
+        .game-card p {
+            max-width: 38ch;
+            margin: 0;
+            color: #b9c9df;
+            line-height: 1.5;
+        }
+        .launch {
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 20px;
+            color: var(--accent);
+            font-size: .9rem;
+            font-weight: 800;
+        }
+        footer {
+            padding-top: 30px;
+            color: #8192ad;
+            font-size: .85rem;
+            text-align: center;
+        }
+        @media (max-width: 640px) {
+            main { width: min(480px, calc(100% - 28px)); padding-top: 48px; }
+            .intro { margin-bottom: 28px; }
+            .game-grid { grid-template-columns: 1fr; gap: 13px; }
+            .game-card { min-height: 190px; padding: 22px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="eyebrow">Jed's collection of arcade adventures</p>
+        <h1>SPACE ARCADE</h1>
+        <p class="intro">Choose a game and launch into the stars. Each card opens a different part of the space arcade.</p>
+
+        <section class="game-grid" aria-label="Available games">
+            <a class="game-card" style="--accent:#69e6a2" href="./space_invader_start/phaser/index.html">
+                <span class="game-number">01</span>
+                <h2>Space Invader Start</h2>
+                <p>Begin your mission and take on the incoming asteroid field.</p>
+                <span class="launch">Play game <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="game-card" style="--accent:#58d9ff" href="./space_intruder_scene_1%202/phaser/index.html">
+                <span class="game-number">02</span>
+                <h2>Space Intruder</h2>
+                <p>Fly through the space-intruder scene and see how long you can last.</p>
+                <span class="launch">Play game <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="game-card" style="--accent:#ff9b74" href="./game_over_space_invader/phaser/index.html">
+                <span class="game-number">03</span>
+                <h2>Game Over Space Invader</h2>
+                <p>Visit the game-over scene from the space-invader set.</p>
+                <span class="launch">Open scene <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="game-card" style="--accent:#bd9aff" href="./ultimate_space_game/index.html">
+                <span class="game-number">04</span>
+                <h2>Ultimate Space Game</h2>
+                <p>Play the full arcade game with cruisers, upgrades, bosses, and power-ups.</p>
+                <span class="launch">Launch full game <span aria-hidden="true">→</span></span>
+            </a>
+        </section>
+
+        <footer>Pick a destination. The galaxy can wait a second.</footer>
+    </main>
+</body>
+</html>
