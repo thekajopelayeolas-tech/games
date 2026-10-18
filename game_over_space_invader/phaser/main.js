@@ -159,6 +159,9 @@ class SceneFromFile extends Phaser.Scene {
 
     // Sounds: 1-9 play this scene's sound effects.
     const sounds = prop(data, 'sounds', '').split(',').filter(Boolean).map(at);
+    if (window.installSceneViewerTutorial) {
+      window.installSceneViewerTutorial(this, sounds, this.info.name);
+    }
     this.input.keyboard.on('keydown', (event) => {
       const n = Number(event.key);
       if (n >= 1 && n <= sounds.length) this.sound.play(sounds[n - 1]);
