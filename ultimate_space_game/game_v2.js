@@ -1399,6 +1399,12 @@ const config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
+    parent: 'game-root',
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        fullscreenTarget: document.body
+    },
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 0 } }
@@ -1407,3 +1413,21 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+const fullscreenButton = document.getElementById('fullscreen-button');
+fullscreenButton.addEventListener('click', () => {
+    if (game.scale.isFullscreen) {
+        game.scale.stopFullscreen();
+    } else {
+        game.scale.startFullscreen();
+    }
+});
+
+game.scale.on('enterfullscreen', () => {
+    fullscreenButton.textContent = '⛶ Exit Fullscreen';
+    fullscreenButton.setAttribute('aria-label', 'Exit fullscreen');
+});
+game.scale.on('leavefullscreen', () => {
+    fullscreenButton.textContent = '⛶ Fullscreen';
+    fullscreenButton.setAttribute('aria-label', 'Enter fullscreen');
+});

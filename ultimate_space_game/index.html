@@ -9,6 +9,7 @@
         html, body {
             margin: 0;
             height: 100%;
+            width: 100%;
             background: #000;
             overflow: hidden;
         }
@@ -17,12 +18,36 @@
             justify-content: center;
             align-items: center;
         }
+        #game-root {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
         canvas {
             display: block;
         }
+        #fullscreen-button {
+            position: fixed;
+            z-index: 10;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            padding: 10px 14px;
+            border: 1px solid rgba(115, 225, 255, .7);
+            border-radius: 10px;
+            background: rgba(5, 16, 39, .82);
+            color: #eafaff;
+            font: 700 14px system-ui, sans-serif;
+            cursor: pointer;
+            box-shadow: 0 0 18px rgba(41, 217, 255, .24);
+        }
+        #fullscreen-button:hover { background: rgba(20, 60, 96, .95); }
+        body:fullscreen #fullscreen-button { top: max(12px, env(safe-area-inset-top)); }
     </style>
 </head>
 <body>
+    <div id="game-root"></div>
+    <button id="fullscreen-button" type="button" aria-label="Enter fullscreen">⛶ Fullscreen</button>
     <script src="./game_v2.js"></script>
 </body>
 </html>

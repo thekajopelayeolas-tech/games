@@ -15,6 +15,7 @@
         * { box-sizing: border-box; }
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
             overflow-x: hidden;
             background:
@@ -37,9 +38,14 @@
             background-size: 230px 190px, 310px 270px, 390px 320px, 280px 230px, 350px 290px;
         }
         main {
-            width: min(1060px, calc(100% - 40px));
-            margin: 0 auto;
-            padding: 68px 0 48px;
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            flex-direction: column;
+            justify-content: center;
+            margin: 0;
+            padding: clamp(30px, 6vh, 72px) clamp(24px, 6vw, 100px);
         }
         .eyebrow {
             margin: 0 0 12px;
@@ -62,7 +68,7 @@
         }
         .intro {
             max-width: 600px;
-            margin: 18px auto 42px;
+            margin: 18px auto clamp(26px, 5vh, 48px);
             color: #b9c9df;
             font-size: 1.05rem;
             line-height: 1.65;
@@ -70,13 +76,14 @@
         }
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
+            width: 100%;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: clamp(12px, 1.8vw, 24px);
         }
         .game-card {
             position: relative;
             display: flex;
-            min-height: 222px;
+            min-height: clamp(230px, 30vh, 340px);
             flex-direction: column;
             align-items: flex-start;
             padding: 26px;
@@ -143,16 +150,26 @@
             font-weight: 800;
         }
         footer {
-            padding-top: 30px;
+            padding-top: clamp(20px, 4vh, 38px);
             color: #8192ad;
             font-size: .85rem;
             text-align: center;
         }
         @media (max-width: 640px) {
-            main { width: min(480px, calc(100% - 28px)); padding-top: 48px; }
+            main { min-height: 100vh; min-height: 100dvh; padding: 42px 18px 28px; }
             .intro { margin-bottom: 28px; }
             .game-grid { grid-template-columns: 1fr; gap: 13px; }
             .game-card { min-height: 190px; padding: 22px; }
+        }
+        @media (min-width: 641px) and (max-width: 980px) {
+            .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .game-card { min-height: 220px; }
+        }
+        @media (max-height: 700px) and (min-width: 641px) {
+            main { padding-top: 24px; padding-bottom: 24px; }
+            .intro { margin-top: 10px; margin-bottom: 20px; }
+            .game-card { min-height: 200px; padding: 20px; }
+            footer { padding-top: 18px; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
