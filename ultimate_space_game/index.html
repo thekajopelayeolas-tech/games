@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Ultimate Space Game</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <style>
@@ -23,9 +23,11 @@
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
+            touch-action: none;
         }
         canvas {
             display: block;
+            touch-action: none;
         }
         #fullscreen-button {
             position: fixed;
@@ -33,6 +35,8 @@
             top: max(12px, env(safe-area-inset-top));
             right: max(12px, env(safe-area-inset-right));
             padding: 10px 14px;
+            min-height: 44px;
+            touch-action: manipulation;
             border: 1px solid rgba(115, 225, 255, .7);
             border-radius: 10px;
             background: rgba(5, 16, 39, .82);
@@ -43,11 +47,29 @@
         }
         #fullscreen-button:hover { background: rgba(20, 60, 96, .95); }
         body:fullscreen #fullscreen-button { top: max(12px, env(safe-area-inset-top)); }
+        #rotate-hint {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            background: radial-gradient(ellipse at center, #152956, #050a18 75%);
+            color: #eefaff;
+            font: 700 20px/1.5 system-ui, sans-serif;
+            text-align: center;
+        }
+        #rotate-hint span { display: block; margin-bottom: 14px; font-size: 54px; }
+        @media (orientation: portrait) and (max-width: 900px) {
+            #rotate-hint { display: flex; }
+        }
     </style>
 </head>
 <body>
     <div id="game-root"></div>
-    <button id="fullscreen-button" type="button" aria-label="Enter fullscreen">⛶ Fullscreen</button>
+    <button id="fullscreen-button" type="button" aria-label="Enter fullscreen">1 · Fullscreen</button>
+    <div id="rotate-hint" role="status"><div><span aria-hidden="true">📱↻</span>Rotate your device sideways for the best game controls.</div></div>
     <script src="./game_v2.js"></script>
 </body>
 </html>

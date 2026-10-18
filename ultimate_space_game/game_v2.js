@@ -38,6 +38,36 @@ const DEFAULT_UPGRADES = {
     rapidFireDuration: 0,
     armor: 0
 };
+const TUTORIAL_LESSONS = [
+    {
+        title: '1. Move & dodge',
+        text: 'Use ← and → or the on-screen ◀ and ▶ buttons to steer. Avoid asteroids: a hit costs a heart. Cruiser 3 moves faster; Cruiser 4 starts with an extra heart.'
+    },
+    {
+        title: '2. Fire & score',
+        text: 'Press SPACE or hold FIRE to shoot. Each asteroid you destroy adds score. Every 10 destroyed asteroids can drop a power-up.'
+    },
+    {
+        title: '3. Cruiser specials',
+        text: 'Press C or tap C for your ship’s special ability. Cruiser 7: shield. Cruiser 3: speed burst. Cruiser 4: repair one heart. Cruiser 8: rapid overdrive. Cruiser 9: asteroid-clearing salvo. Specials recharge after 15 seconds.'
+    },
+    {
+        title: '4. Collect power-ups',
+        text: 'Touch a falling icon to collect it: red adds bullets, green gives a shield, blue boosts speed, yellow slows asteroids, purple doubles score, white clears asteroids and damages bosses, pink heals, and the rocket gives rapid fire.'
+    },
+    {
+        title: '5. Ships & upgrades',
+        text: 'Press X or tap SHIPS to choose an available cruiser. Boss drops are temporary for that run. Buy Cruisers 3, 4, 8, or 9 in the Cruiser Shop for 1,000 credits each. Permanent upgrades improve hearts, bullets, power-up duration, healing, nukes, and armor.'
+    },
+    {
+        title: '6. Bosses & levels',
+        text: 'Every 100 score points brings a boss. Bosses grow tougher by 50 HP each time. Defeating one advances the level; asteroids get faster. A boss collision costs two hearts unless armor absorbs it.'
+    },
+    {
+        title: '7. Pause & fullscreen',
+        text: 'Press Z or tap Ⅱ to pause. Resume, restart, or exit to the hangar from the pause menu. Press 1 or tap the Fullscreen button to expand the game; press 1 or Esc to leave fullscreen.'
+    }
+];
 
 function readSavedValue(key, fallback) {
     try {
@@ -139,16 +169,16 @@ class StartScene extends Phaser.Scene {
 
         const menuPanel = this.add.graphics().setDepth(0);
         menuPanel.fillStyle(0x061329, 0.42);
-        menuPanel.fillRoundedRect(250, 170, 300, 380, 22);
+        menuPanel.fillRoundedRect(250, 170, 300, 390, 22);
         menuPanel.lineStyle(2, 0x55CFFF, 0.45);
-        menuPanel.strokeRoundedRect(250, 170, 300, 380, 22);
+        menuPanel.strokeRoundedRect(250, 170, 300, 390, 22);
         styleSpaceTitle(this.add.text(400, 180, 'HANGAR', {
             fontSize: '14px'
         }).setOrigin(0.5), 14, '#68E68C');
-        styleSpaceTitle(this.add.text(400, 340, 'MISSION LAUNCH', {
+        styleSpaceTitle(this.add.text(400, 337, 'MISSION LAUNCH', {
             fontSize: '12px'
         }).setOrigin(0.5), 12, '#29DFFF');
-        styleSpaceTitle(this.add.text(400, 448, 'SUPPLIES', {
+        styleSpaceTitle(this.add.text(400, 469, 'SUPPLIES', {
             fontSize: '16px'
         }).setOrigin(0.5), 16, '#B773FF');
 
@@ -168,16 +198,23 @@ class StartScene extends Phaser.Scene {
         }).setOrigin(0.5), 22, '#B773FF').setInteractive().on('pointerdown', () => this.showUpgrades());
         this.bindMenuHover(upgradeButton, '#C58AFF');
 
-        const startButton = this.add.image(400, 390, 'button').setScale(1.5).setInteractive({ useHandCursor: true });
+        const startButton = this.add.image(400, 379, 'button').setScale(1.45).setInteractive({ useHandCursor: true });
         startButton.on('pointerdown', () => this.startGame());
         this.tweens.add({ targets: startButton, scale: { from: 1.48, to: 1.54 }, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
         startButton.on('pointerover', () => startButton.setTint(0xB7F5FF));
         startButton.on('pointerout', () => startButton.clearTint());
 
-        const shopButton = this.add.rectangle(400, 503, 230, 58, 0x0B3555, 0.95)
+        const tutorialButton = this.add.rectangle(400, 429, 190, 38, 0x193758, 0.96)
+            .setStrokeStyle(2, 0x71DFFF).setInteractive({ useHandCursor: true });
+        tutorialButton.on('pointerdown', () => this.startGame(true));
+        this.add.text(400, 429, 'TUTORIAL · 10 TARGETS', {
+            fontSize: '14px', fill: '#EAF8FF', fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.startGame(true));
+
+        const shopButton = this.add.rectangle(400, 516, 230, 58, 0x0B3555, 0.95)
             .setStrokeStyle(3, 0x42D9FF).setInteractive({ useHandCursor: true });
         shopButton.on('pointerdown', () => this.showShop());
-        styleSpaceTitle(this.add.text(400, 503, 'POWER-UP SHOP', {
+        styleSpaceTitle(this.add.text(400, 516, 'POWER-UP SHOP', {
             fontSize: '22px'
         }).setOrigin(0.5), 22).setInteractive().on('pointerdown', () => this.showShop());
         this.bindMenuHover(shopButton, '#42D9FF');
@@ -256,13 +293,14 @@ class StartScene extends Phaser.Scene {
         return owned;
     }
 
-    startGame() {
+    startGame(tutorial = false) {
         const owned = this.getOwnedCruisers();
         const selectedCruiser = readSavedValue('selectedCruiser', 'player');
-        const permittedSelection = owned.includes(selectedCruiser) ? selectedCruiser : 'player';
+        const permittedSelection = tutorial ? 'player' : owned.includes(selectedCruiser) ? selectedCruiser : 'player';
         this.game.registry.set('unlockedCruisers', owned);
         this.game.registry.set('selectedCruiser', permittedSelection);
         this.game.registry.set('secondCruiserUnlocked', false);
+        this.game.registry.set('tutorialMode', tutorial);
         this.scene.start('MainGameScene');
     }
 
@@ -512,6 +550,8 @@ class MainGameScene extends Phaser.Scene {
         if (!this.unlockedCruisers.includes('player')) this.unlockedCruisers.unshift('player');
         this.runOnlyCruisers = [];
         this.game.registry.set('unlockedCruisers', this.unlockedCruisers);
+        this.isTutorial = this.game.registry.get('tutorialMode') === true;
+        this.game.registry.set('tutorialMode', false);
         const savedShip = this.game.registry.get('selectedCruiser');
         this.currentShip = this.unlockedCruisers.includes(savedShip) ? savedShip : 'player';
         this.upgradeLevels = { ...DEFAULT_UPGRADES, ...readSavedValue('spaceGameUpgrades', {}) };
@@ -534,6 +574,12 @@ class MainGameScene extends Phaser.Scene {
         this.shipNotice = null;
         
         this.score = 0;
+        this.tutorialTargetsSpawned = 0;
+        this.tutorialTargetsCleared = 0;
+        this.tutorialComplete = false;
+        this.tutorialPracticeStarted = false;
+        this.tutorialGuideStep = 0;
+        this.tutorialGuideContainer = null;
         this.nextBossScore = 100;
         this.destroyedCount = 0;
         this.hasCruiser4LifeBonus = this.currentShip === 'ship_cruiser_4';
@@ -542,8 +588,15 @@ class MainGameScene extends Phaser.Scene {
         this.armorCharges = Math.max(0, Number(this.upgradeLevels.armor) || 0);
         this.level = 1;
         this.firstBossDefeated = false;
-        this.scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '20px', fill: '#FFF' });
-        this.levelText = this.add.text(620, 20, 'Level 1', { fontSize: '20px', fill: '#FFF' });
+        this.scoreText = this.add.text(20, 20, this.isTutorial ? 'Targets: 0/10' : 'Score: 0', { fontSize: '20px', fill: '#FFF' });
+        this.levelText = this.add.text(620, 20, this.isTutorial ? 'TUTORIAL' : 'Level 1', { fontSize: '20px', fill: '#FFF' });
+        if (this.isTutorial) {
+            this.add.rectangle(400, 190, 710, 54, 0x061329, 0.78).setStrokeStyle(2, 0x55CFFF, 0.8).setDepth(1190);
+            this.tutorialInstructionText = this.add.text(400, 190, 'TUTORIAL  •  Follow the lessons, then practice on 10 asteroids', {
+                fontSize: '19px', fill: '#EAF8FF', stroke: '#061329', strokeThickness: 3,
+                align: 'center'
+            }).setOrigin(0.5).setDepth(1191);
+        }
         this.armorText = this.add.text(20, 115, 'Armor: ' + this.armorCharges, { fontSize: '18px', fill: '#77DDFF' });
         this.armorText.setDepth(1000);
         this.specialAbilityReadyAt = 0;
@@ -563,6 +616,15 @@ class MainGameScene extends Phaser.Scene {
                 lineSpacing: 2,
                 align: 'right'
             }).setOrigin(1, 1).setDepth(1201);
+        this.hasTouchControls = this.sys.game.device.input.touch ||
+            (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+        this.touchInput = { left: false, right: false, fire: false };
+        this.touchFireLastShot = 0;
+        if (this.hasTouchControls) {
+            this.controlsPanel.setVisible(false);
+            this.controlsText.setVisible(false);
+            this.createTouchControls();
+        }
         
         // Shield Bubble
         this.shieldBubble = null;
@@ -594,9 +656,19 @@ class MainGameScene extends Phaser.Scene {
         this.bossSpawned = false;
         this.bossesSpawned = 0;
         this.bossHealthText = null;
-        this.time.addEvent({
-            delay: 800,
+        this.asteroidSpawner = this.time.addEvent({
+            delay: this.isTutorial ? 1200 : 800,
             callback: () => {
+                if (this.isTutorial) {
+                    if (!this.tutorialPracticeStarted) return;
+                    if (this.tutorialTargetsSpawned >= 10) return;
+                    const tutorialAsteroid = this.asteroids.create(Phaser.Math.Between(55, 745), -45, 'asteroid');
+                    tutorialAsteroid.setVelocityY(135);
+                    tutorialAsteroid.setScale(0.65);
+                    tutorialAsteroid.setData('isTutorialTarget', true);
+                    this.tutorialTargetsSpawned++;
+                    return;
+                }
                 if (this.bossSpawned) return;
                 const asteroidX = Phaser.Math.Between(30, 770);
                 const asteroid = this.asteroids.create(asteroidX, -50, 'asteroid');
@@ -611,6 +683,11 @@ class MainGameScene extends Phaser.Scene {
         this.anims.create({ key: 'fifth_boss_spin', frames: this.anims.generateFrameNumbers('fifth_boss'), frameRate: 6, repeat: -1 });
 
         this.physics.add.collider(this.player, this.asteroids, (player, asteroid) => {
+            if (this.isTutorial) {
+                asteroid.setPosition(Phaser.Math.Between(55, 745), -45);
+                asteroid.setVelocityY(135);
+                return;
+            }
             if (asteroid.getData('isBoss')) {
                 const absorbedByArmor = this.armorCharges > 0;
                 if (absorbedByArmor) {
@@ -688,6 +765,12 @@ class MainGameScene extends Phaser.Scene {
             const explosion = this.add.sprite(asteroid.x, asteroid.y, 'explosion');
             explosion.play('explode');
             explosion.on('animationcomplete', () => { explosion.destroy(); });
+
+            if (this.isTutorial) {
+                this.sound.play('explosion_crunch_0', { volume: 1.2 });
+                this.onTutorialTargetCleared();
+                return;
+            }
             
             this.addScore(1 * this.scoreMultiplier);
             this.checkBossSpawn();
@@ -702,7 +785,7 @@ class MainGameScene extends Phaser.Scene {
         this.time.addEvent({
             delay: 10000,
             callback: () => {
-                this.spawnPowerUp();
+                if (!this.isTutorial) this.spawnPowerUp();
             },
             loop: true
         });
@@ -711,15 +794,6 @@ class MainGameScene extends Phaser.Scene {
             powerup.destroy();
 
             if (type === 1) this.bulletCount = Math.min(3, this.bulletCount + 2);
-        this.physics.add.overlap(this.player, this.shipPickups, (player, pickup) => {
-            const shipKey = pickup.getData('shipKey');
-            pickup.destroy();
-            if (!this.getAvailableCruisers().includes(shipKey)) {
-                this.runOnlyCruisers.push(shipKey);
-            }
-            const cruiserName = shipKey.replace('ship_cruiser_', 'Cruiser ');
-            this.showShipMessage(cruiserName + ' temporary! Press X to select; lost after this run');
-        });
             if (type === 2) {
                 this.hasShield = true;
                 this.sound.play('shield_sound');
@@ -801,7 +875,17 @@ class MainGameScene extends Phaser.Scene {
                 });
             }
         });
-        this.applyShopPurchases();
+        this.physics.add.overlap(this.player, this.shipPickups, (player, pickup) => {
+            const shipKey = pickup.getData('shipKey');
+            pickup.destroy();
+            if (!this.getAvailableCruisers().includes(shipKey)) {
+                this.runOnlyCruisers.push(shipKey);
+            }
+            const cruiserName = shipKey.replace('ship_cruiser_', 'Cruiser ');
+            this.showShipMessage(cruiserName + ' temporary! Press X to select; lost after this run');
+        });
+        if (!this.isTutorial) this.applyShopPurchases();
+        else this.showTutorialGuide();
     }
     spawnPowerUp() {
         const x = Phaser.Math.Between(100, 700);
@@ -841,6 +925,110 @@ class MainGameScene extends Phaser.Scene {
         if (this.armorText) this.armorText.setText('Armor: ' + this.armorCharges);
     }
 
+    showTutorialGuide() {
+        if (this.tutorialGuideContainer) {
+            this.tutorialGuideContainer.removeAll(true);
+            this.tutorialGuideContainer.destroy();
+        }
+        const lesson = TUTORIAL_LESSONS[this.tutorialGuideStep];
+        const guide = this.add.container(0, 0).setDepth(2500);
+        guide.add(this.add.rectangle(400, 300, 800, 600, 0x020816, 0.82).setInteractive());
+        guide.add(this.add.rectangle(400, 300, 660, 500, 0x0A1D3B, 0.99).setStrokeStyle(3, 0x55DFFF));
+        styleSpaceTitle(this.add.text(400, 88, 'FLIGHT SCHOOL', { fontSize: '30px' }).setOrigin(0.5), 30);
+        guide.add(this.add.text(400, 124, 'LESSON ' + (this.tutorialGuideStep + 1) + ' OF ' + TUTORIAL_LESSONS.length, {
+            fontSize: '15px', fill: '#8FDFFF', fontStyle: 'bold', letterSpacing: 2
+        }).setOrigin(0.5));
+        guide.add(styleSpaceTitle(this.add.text(400, 190, lesson.title, { fontSize: '25px' }).setOrigin(0.5), 25, '#B773FF'));
+        guide.add(this.add.text(400, 295, lesson.text, {
+            fontSize: '19px',
+            fill: '#E8F2FF',
+            align: 'center',
+            lineSpacing: 10,
+            wordWrap: { width: 540, useAdvancedWrap: true }
+        }).setOrigin(0.5));
+
+        if (this.tutorialGuideStep > 0) {
+            const backButton = this.add.rectangle(265, 475, 160, 52, 0x203657, 0.98)
+                .setStrokeStyle(2, 0x7CAED8).setInteractive({ useHandCursor: true });
+            backButton.on('pointerdown', () => {
+                this.tutorialGuideStep--;
+                this.showTutorialGuide();
+            });
+            guide.add(backButton);
+            guide.add(this.add.text(265, 475, '← BACK', {
+                fontSize: '18px', fill: '#FFFFFF', fontStyle: 'bold'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+                this.tutorialGuideStep--;
+                this.showTutorialGuide();
+            }));
+        }
+
+        const lastLesson = this.tutorialGuideStep === TUTORIAL_LESSONS.length - 1;
+        const nextLabel = lastLesson ? 'BEGIN 10-TARGET PRACTICE' : 'NEXT LESSON  →';
+        const nextWidth = lastLesson ? 280 : 190;
+        const nextX = this.tutorialGuideStep > 0 ? 535 : 400;
+        const nextButton = this.add.rectangle(nextX, 475, nextWidth, 52, 0x14527A, 0.98)
+            .setStrokeStyle(2, 0x71DFFF).setInteractive({ useHandCursor: true });
+        nextButton.on('pointerdown', () => this.advanceTutorialLesson());
+        guide.add(nextButton);
+        guide.add(this.add.text(nextX, 475, nextLabel, {
+            fontSize: lastLesson ? '15px' : '18px', fill: '#FFFFFF', fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.advanceTutorialLesson()));
+
+        this.tutorialGuideContainer = guide;
+    }
+
+    advanceTutorialLesson() {
+        if (this.tutorialGuideStep >= TUTORIAL_LESSONS.length - 1) {
+            this.beginTutorialPractice();
+            return;
+        }
+        this.tutorialGuideStep++;
+        this.showTutorialGuide();
+    }
+
+    beginTutorialPractice() {
+        this.tutorialPracticeStarted = true;
+        if (this.tutorialGuideContainer) {
+            this.tutorialGuideContainer.removeAll(true);
+            this.tutorialGuideContainer.destroy();
+            this.tutorialGuideContainer = null;
+        }
+        if (this.tutorialInstructionText) {
+            this.tutorialInstructionText.setText('PRACTICE  •  Use move and fire controls to clear all 10 asteroids');
+        }
+    }
+
+    onTutorialTargetCleared() {
+        if (!this.isTutorial || this.tutorialComplete) return;
+        this.tutorialTargetsCleared = Math.min(10, this.tutorialTargetsCleared + 1);
+        this.scoreText.setText('Targets: ' + this.tutorialTargetsCleared + '/10');
+        if (this.tutorialTargetsCleared >= 10) this.finishTutorial();
+    }
+
+    finishTutorial() {
+        if (this.tutorialComplete) return;
+        this.tutorialComplete = true;
+        if (this.asteroidSpawner) this.asteroidSpawner.remove(false);
+        this.asteroids.clear(true, true);
+        if (this.engineSound) this.engineSound.stop();
+
+        const overlay = this.add.container(0, 0).setDepth(2000);
+        overlay.add(this.add.rectangle(400, 300, 800, 600, 0x020816, 0.78));
+        overlay.add(this.add.rectangle(400, 300, 480, 230, 0x0A1D3B, 0.98).setStrokeStyle(3, 0x55DFFF));
+        styleSpaceTitle(this.add.text(400, 245, 'TUTORIAL COMPLETE!', { fontSize: '30px' }).setOrigin(0.5), 30);
+        overlay.add(this.add.text(400, 290, 'You cleared all 10 asteroids. Great flying!', {
+            fontSize: '17px', fill: '#D7E9FF', align: 'center'
+        }).setOrigin(0.5));
+        const returnButton = this.add.rectangle(400, 350, 230, 48, 0x14527A, 0.98)
+            .setStrokeStyle(2, 0x71DFFF).setInteractive({ useHandCursor: true });
+        returnButton.on('pointerdown', () => this.scene.start('StartScene'));
+        overlay.add(returnButton);
+        overlay.add(this.add.text(400, 350, 'RETURN TO HANGAR', {
+            fontSize: '17px', fill: '#FFFFFF', fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('StartScene')));
+    }
+
     getSpecialAbility() {
         const abilities = {
             player: { name: 'Shield Pulse', description: '4s shield' },
@@ -859,6 +1047,74 @@ class MainGameScene extends Phaser.Scene {
         const cooldownLabel = remaining > 0 ? Math.ceil(remaining / 1000) + 's' : 'READY';
         this.specialText.setText('C: ' + ability.name + ' (' + ability.description + ') — ' + cooldownLabel);
         this.specialText.setColor(remaining > 0 ? '#BBBBBB' : '#FFE66D');
+    }
+
+    createTouchControls() {
+        this.addTouchHoldButton(64, 508, '◀', 'left');
+        this.addTouchHoldButton(151, 508, '▶', 'right');
+        this.addTouchHoldButton(734, 508, 'FIRE', 'fire', 42, 15);
+        this.addTouchActionButton(638, 508, 'C', () => this.activateSpecialAbility(), '#7B5CFF');
+        this.addTouchActionButton(638, 418, 'SHIPS', () => this.showShipMenu(), '#20A8D5', 42, 12);
+        this.addTouchActionButton(734, 418, 'Ⅱ', () => {
+            this.scene.launch('PauseScene');
+            this.scene.pause();
+        }, '#D48A3C', 42, 20);
+        this.add.text(106, 558, 'STEER', {
+            fontSize: '11px', fill: '#EAF8FF', stroke: '#061329', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(1301);
+    }
+
+    addTouchHoldButton(x, y, label, action, radius = 37, fontSize = 25) {
+        const button = this.add.circle(x, y, radius, 0x082044, 0.72)
+            .setStrokeStyle(2, 0x71DFFF, 0.9)
+            .setDepth(1300)
+            .setInteractive({ useHandCursor: true });
+        const labelText = this.add.text(x, y, label, {
+            fontSize: fontSize + 'px',
+            fill: '#FFFFFF',
+            fontStyle: 'bold',
+            stroke: '#061329',
+            strokeThickness: 3
+        }).setOrigin(0.5).setDepth(1301);
+
+        const press = pointer => {
+            if (pointer.event && pointer.event.cancelable) pointer.event.preventDefault();
+            this.touchInput[action] = true;
+            button.setFillStyle(0x176A91, 0.9);
+            if (action === 'fire') this.touchFireLastShot = this.time.now - 220;
+        };
+        const release = () => {
+            this.touchInput[action] = false;
+            button.setFillStyle(0x082044, 0.72);
+        };
+        button.on('pointerdown', press);
+        button.on('pointerup', release);
+        button.on('pointerupoutside', release);
+        button.on('pointerout', release);
+        labelText.setInteractive().on('pointerdown', press).on('pointerup', release).on('pointerupoutside', release);
+    }
+
+    addTouchActionButton(x, y, label, callback, color, radius = 37, fontSize = 14) {
+        const button = this.add.circle(x, y, radius, 0x082044, 0.76)
+            .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 0.95)
+            .setDepth(1300)
+            .setInteractive({ useHandCursor: true });
+        const labelText = this.add.text(x, y, label, {
+            fontSize: fontSize + 'px',
+            fill: '#FFFFFF',
+            fontStyle: 'bold',
+            stroke: '#061329',
+            strokeThickness: 3,
+            align: 'center'
+        }).setOrigin(0.5).setDepth(1301).setInteractive();
+        const press = pointer => {
+            if (pointer.event && pointer.event.cancelable) pointer.event.preventDefault();
+            button.setFillStyle(Phaser.Display.Color.HexStringToColor(color).color, 0.95);
+            callback();
+        };
+        const release = () => button.setFillStyle(0x082044, 0.76);
+        button.on('pointerdown', press).on('pointerup', release).on('pointerupoutside', release);
+        labelText.on('pointerdown', press).on('pointerup', release).on('pointerupoutside', release);
     }
 
     activateSpecialAbility() {
@@ -1001,7 +1257,7 @@ class MainGameScene extends Phaser.Scene {
     }
 
     checkBossSpawn() {
-        if (!this.bossSpawned && this.score >= this.nextBossScore) {
+        if (!this.isTutorial && !this.bossSpawned && this.score >= this.nextBossScore) {
             this.spawnBossAsteroid();
         }
     }
@@ -1222,11 +1478,24 @@ class MainGameScene extends Phaser.Scene {
         if (this.debugText) this.debugText.destroy();
         this.debugText = this.add.text(370, 90, 'Lives: ' + this.lives, { fontSize: '20px', fill: '#0F0' });
         this.debugText.setDepth(1000);
+        this.debugText.setVisible(!this.isTutorial);
     }
 
 
 
     update() {
+        if (this.tutorialGuideContainer) {
+            this.player.setVelocityX(0);
+            return;
+        }
+        if (this.isTutorial && !this.tutorialComplete) {
+            this.asteroids.getChildren().forEach(asteroid => {
+                if (asteroid.active && asteroid.y > 630) {
+                    asteroid.setPosition(Phaser.Math.Between(55, 745), -45);
+                }
+            });
+        }
+
         if (Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
             this.scene.launch('PauseScene');
             this.scene.pause();
@@ -1265,8 +1534,8 @@ class MainGameScene extends Phaser.Scene {
         const cruiserSpeedBonus = this.currentShip === 'ship_cruiser_3' ? 50 : 0;
         const specialSpeedBonus = this.time.now < this.specialSpeedUntil ? 300 : 0;
         const speed = 700 + (this.speedBoost * 10) + cruiserSpeedBonus + specialSpeedBonus;
-        if (this.cursors.left.isDown) this.player.setVelocityX(-speed);
-        else if (this.cursors.right.isDown) this.player.setVelocityX(speed);
+        if (this.cursors.left.isDown || this.touchInput.left) this.player.setVelocityX(-speed);
+        else if (this.cursors.right.isDown || this.touchInput.right) this.player.setVelocityX(speed);
         else this.player.setVelocityX(0);
 
         const hasRapidFire = this.rapidFire || this.currentShip === 'ship_cruiser_8';
@@ -1280,6 +1549,9 @@ class MainGameScene extends Phaser.Scene {
             }
         } else if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
             canFire = true;
+        } else if (this.touchInput.fire && this.time.now - this.touchFireLastShot >= 220) {
+            canFire = true;
+            this.touchFireLastShot = this.time.now;
         }
 
         if (canFire) {
@@ -1415,12 +1687,21 @@ const config = {
 const game = new Phaser.Game(config);
 
 const fullscreenButton = document.getElementById('fullscreen-button');
-fullscreenButton.addEventListener('click', () => {
+function toggleGameFullscreen() {
     if (game.scale.isFullscreen) {
         game.scale.stopFullscreen();
     } else {
         game.scale.startFullscreen();
     }
+}
+
+fullscreenButton.addEventListener('click', toggleGameFullscreen);
+document.addEventListener('keydown', event => {
+    if ((event.key !== '1' && event.code !== 'Numpad1') || event.repeat) return;
+    const mainScene = game.scene.getScene('MainGameScene');
+    if (mainScene && mainScene.shipMenuContainer) return;
+    event.preventDefault();
+    toggleGameFullscreen();
 });
 
 game.scale.on('enterfullscreen', () => {
