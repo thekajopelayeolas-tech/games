@@ -577,6 +577,7 @@ class MainGameScene extends Phaser.Scene {
         this.load.image('powerup_white', './assets/space_intruder/ui/power_up_12.png');
         this.load.image('powerup_pink', './assets/space_intruder/ui/hearts_4.png');
         this.load.image('powerup_rapid_fire', './assets/space_intruder/sprites/space_rocket_4.png');
+        this.load.image('powerup_triple', './assets/space_intruder/ui/power_up_19.png');
         this.load.spritesheet('explosion', './assets/space_intruder/sprites/big_explosion.png', { frameWidth: 128, frameHeight: 128 });
         this.load.audio('explosion_crunch_0', './assets/space_intruder/sounds/explosion.mp3');
         this.load.audio('shield_sound', './assets/space_intruder/sounds/force_field_2.mp3');
@@ -910,6 +911,19 @@ class MainGameScene extends Phaser.Scene {
                     this.updateHearts();
                 }
             }
+            if (type === 9) { // Triple (Power-up 19): two random temporary cruisers
+                const cruiserKeys = CRUISER_SHOP_ITEMS.map(item => item.key);
+                const ownedKeys = this.getAvailableCruisers();
+                const candidates = Phaser.Utils.Array.Shuffle(cruiserKeys.filter(key => !ownedKeys.includes(key)));
+                const granted = candidates.slice(0, 2);
+                granted.forEach(key => this.runOnlyCruisers.push(key));
+                if (granted.length) {
+                    const names = granted.map(key => key.replace('ship_cruiser_', 'Cruiser ')).join(' and ');
+                    this.showShipMessage('Triple! ' + names + ' temporary! Press X to select; lost after this run');
+                } else {
+                    this.showShipMessage('Triple! You already own every cruiser');
+                }
+            }
             if (type === 8) { // Rapid Fire
                 this.rapidFire = true;
                 this.rapidFireSpeedBonus = 30;
@@ -935,9 +949,10 @@ class MainGameScene extends Phaser.Scene {
     }
     spawnPowerUp() {
         const x = Phaser.Math.Between(100, 700);
-        const type = Phaser.Math.Between(1, 8);
+        const type = Phaser.Math.Between(1, 9);
         let texture = 'powerup_red';
         switch(type) {
+            case 9: texture = 'powerup_triple'; break; // Triple (grants two random cruisers)
             case 1: texture = 'powerup_red'; break;    // Bullet
             case 2: texture = 'powerup_green'; break;  // Shield
             case 3: texture = 'powerup_blue'; break;   // Speed
