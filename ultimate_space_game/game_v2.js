@@ -110,17 +110,42 @@ const PLAYFIELD_HEIGHT = 600;
 
 // Zooms the 800 x 600 playfield to fit the current phone/browser window and keeps it centered.
 // Layout stays in playfield coordinates, so nothing needs to be repositioned for each screen size.
-// Multiplier on the width fit. 1 = playfield exactly as wide as the screen (laptop or phone).
-const PLAYFIELD_SCREEN_FILL = 1.1;
-// Horizontal offset in world units. 0 = centered.
-const PLAYFIELD_SHIFT_X = 0;
+// Menus: multiplier on the width fit. 1 = playfield exactly as wide as the screen (laptop or phone).
+const PLAYFIELD_SCREEN_FILL = 1.2;
+// Invisible side borders, in world units hidden from each edge of the playfield (Main Game only).
+// Left and right are set independently: raise one to hide more of that side.
+// Both default to 30, which matches the asteroid spawn span (x 30 to 770).
+const PLAYFIELD_BORDER_LEFT = 30;
+const PLAYFIELD_BORDER_RIGHT = 30;
+
+// Paints the left and right border strips black and makes them solid (Main Game only).
+// Set a border to 0 to remove its bar. Returns a static group that other objects can collide with.
+function addBorderBars(scene) {
+    const bars = scene.physics.add.staticGroup();
+    const addBar = (x, width) => {
+        // Transparent: the body still blocks objects, but nothing is drawn.
+        const bar = scene.add.rectangle(x, PLAYFIELD_HEIGHT / 2, width, PLAYFIELD_HEIGHT, 0x000000, 0).setDepth(950);
+        scene.physics.add.existing(bar, true);
+        bars.add(bar);
+    };
+    if (PLAYFIELD_BORDER_LEFT > 0) addBar(PLAYFIELD_BORDER_LEFT / 2, PLAYFIELD_BORDER_LEFT);
+    if (PLAYFIELD_BORDER_RIGHT > 0) addBar(PLAYFIELD_WIDTH - PLAYFIELD_BORDER_RIGHT / 2, PLAYFIELD_BORDER_RIGHT);
+    return bars;
+}
 
 function getPlayfieldCenterX() {
-    return PLAYFIELD_WIDTH / 2 + PLAYFIELD_SHIFT_X;
+    // Center of the visible area, which shifts when the left and right borders differ.
+    const visibleLeft = PLAYFIELD_BORDER_LEFT;
+    const visibleRight = PLAYFIELD_WIDTH - PLAYFIELD_BORDER_RIGHT;
+    return (visibleLeft + visibleRight) / 2;
 }
 
 function getPlayfieldZoom(scene) {
     // Never zoom past 1x, so a wide laptop window shows the game at its base size instead of enlarging it.
+    if (scene.useSpawnWidthFit) {
+        // The full 800-wide playfield stays on screen; the border strips are painted black on top of it.
+        return Math.min(scene.scale.width / PLAYFIELD_WIDTH, 1);
+    }
     const widthFit = Math.min(scene.scale.width / PLAYFIELD_WIDTH, 1);
     return widthFit * PLAYFIELD_SCREEN_FILL;
 }
@@ -694,8 +719,10 @@ class MainGameScene extends Phaser.Scene {
         this.load.audio('laser_sound', './assets/space_intruder/sounds/laser_1.mp3');
     }
     create() {
+        this.useSpawnWidthFit = true; // Main Game only: show the full playfield with black border bars
         fitPlayfieldCamera(this);
         addFullScreenBackground(this, 'main_bg');
+        this.borderBars = addBorderBars(this);
 
         const paidCruisers = this.game.registry.get('unlockedCruisers') || ['player'];
         this.unlockedCruisers = paidCruisers.filter(key =>
@@ -807,6 +834,12 @@ class MainGameScene extends Phaser.Scene {
         this.lastPowerUpType = 0;
         
         this.asteroids = this.physics.add.group();
+        // Black side bars block everything: ship, asteroids, bullets, power-ups, and cruiser pickups.
+        this.physics.add.collider(this.player, this.borderBars);
+        this.physics.add.collider(this.asteroids, this.borderBars, (asteroid) => asteroid.destroy());
+        this.physics.add.collider(this.bullets, this.borderBars, (bullet) => bullet.destroy());
+        this.physics.add.collider(this.powerups, this.borderBars, (powerup) => powerup.destroy());
+        this.physics.add.collider(this.shipPickups, this.borderBars, (pickup) => pickup.destroy());
         this.bossAsteroid = null;
         this.bossSpawned = false;
         this.bossesSpawned = 0;
@@ -1740,8 +1773,11 @@ class MainGameScene extends Phaser.Scene {
             this.shieldBubble.y = this.player.y;
         }
         if (this.tripleHelpers) {
+            // Keep helpers inside the black bars so they can't drift past them.
+            const minX = PLAYFIELD_BORDER_LEFT + 30;
+            const maxX = PLAYFIELD_WIDTH - PLAYFIELD_BORDER_RIGHT - 30;
             this.tripleHelpers.forEach(helper => {
-                helper.x = this.player.x + helper.getData('side') * 90;
+                helper.x = Phaser.Math.Clamp(this.player.x + helper.getData('side') * 90, minX, maxX);
                 helper.y = this.player.y;
             });
         }
