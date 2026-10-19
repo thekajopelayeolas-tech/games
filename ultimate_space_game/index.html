@@ -10,18 +10,20 @@
             margin: 0;
             height: 100%;
             width: 100%;
-            background: #000;
+            background: #050505;
+            background-image: linear-gradient(#111 1px, transparent 1px),
+                              linear-gradient(90deg, #111 1px, transparent 1px);
+            background-size: 40px 40px;
             overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
         }
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: block;
         }
+        /* Base Styles */
         #game-root {
             width: 100vw;
             height: 100vh;
-            height: 100dvh;
             overflow: hidden;
             touch-action: none;
         }
@@ -37,15 +39,15 @@
             padding: 10px 14px;
             min-height: 44px;
             touch-action: manipulation;
-            border: 1px solid rgba(115, 225, 255, .7);
-            border-radius: 10px;
-            background: rgba(5, 16, 39, .82);
-            color: #eafaff;
-            font: 700 14px system-ui, sans-serif;
+            border: 2px solid #00ff00;
+            border-radius: 4px;
+            background: #000;
+            color: #00ff00;
+            font: 700 14px 'Courier New', monospace;
             cursor: pointer;
-            box-shadow: 0 0 18px rgba(41, 217, 255, .24);
+            box-shadow: 0 0 10px #00ff00;
         }
-        #fullscreen-button:hover { background: rgba(20, 60, 96, .95); }
+        #fullscreen-button:hover { background: #002200; }
         body:fullscreen #fullscreen-button { top: max(12px, env(safe-area-inset-top)); }
         #rotate-hint {
             display: none;
@@ -55,10 +57,11 @@
             align-items: center;
             justify-content: center;
             padding: 28px;
-            background: radial-gradient(ellipse at center, #152956, #050a18 75%);
-            color: #eefaff;
-            font: 700 20px/1.5 system-ui, sans-serif;
+            background: #000;
+            color: #00ff00;
+            font: 700 20px/1.5 'Courier New', monospace;
             text-align: center;
+            border: 4px solid #00ff00;
         }
         #rotate-hint span { display: block; margin-bottom: 14px; font-size: 54px; }
         @media (orientation: portrait) and (max-width: 900px) {
@@ -70,6 +73,6 @@
     <div id="game-root"></div>
     <button id="fullscreen-button" type="button" aria-label="Enter fullscreen">1 · Fullscreen</button>
     <div id="rotate-hint" role="status"><div><span aria-hidden="true">📱↻</span>Rotate your device sideways for the best game controls.</div></div>
-    <script src="./game_v2.js"></script>
+    <script src="./game_v2.js?v=flight-school-3"></script>
 </body>
 </html>

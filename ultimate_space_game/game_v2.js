@@ -175,10 +175,7 @@ class StartScene extends Phaser.Scene {
         styleSpaceTitle(this.add.text(400, 180, 'HANGAR', {
             fontSize: '14px'
         }).setOrigin(0.5), 14, '#68E68C');
-        styleSpaceTitle(this.add.text(400, 337, 'MISSION LAUNCH', {
-            fontSize: '12px'
-        }).setOrigin(0.5), 12, '#29DFFF');
-        styleSpaceTitle(this.add.text(400, 469, 'SUPPLIES', {
+        styleSpaceTitle(this.add.text(400, 476, 'SUPPLIES', {
             fontSize: '16px'
         }).setOrigin(0.5), 16, '#B773FF');
 
@@ -198,17 +195,18 @@ class StartScene extends Phaser.Scene {
         }).setOrigin(0.5), 22, '#B773FF').setInteractive().on('pointerdown', () => this.showUpgrades());
         this.bindMenuHover(upgradeButton, '#C58AFF');
 
-        const startButton = this.add.image(400, 379, 'button').setScale(1.45).setInteractive({ useHandCursor: true });
+        const startButton = this.add.image(400, 370, 'button').setScale(1.35).setInteractive({ useHandCursor: true });
         startButton.on('pointerdown', () => this.startGame());
-        this.tweens.add({ targets: startButton, scale: { from: 1.48, to: 1.54 }, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: startButton, scale: { from: 1.33, to: 1.4 }, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
         startButton.on('pointerover', () => startButton.setTint(0xB7F5FF));
         startButton.on('pointerout', () => startButton.clearTint());
 
-        const tutorialButton = this.add.rectangle(400, 429, 190, 38, 0x193758, 0.96)
-            .setStrokeStyle(2, 0x71DFFF).setInteractive({ useHandCursor: true });
+        const tutorialButton = this.add.rectangle(400, 435, 230, 46, 0x114C70, 0.99)
+            .setStrokeStyle(3, 0x71DFFF).setInteractive({ useHandCursor: true });
         tutorialButton.on('pointerdown', () => this.startGame(true));
-        this.add.text(400, 429, 'TUTORIAL · 10 TARGETS', {
-            fontSize: '14px', fill: '#EAF8FF', fontStyle: 'bold'
+        this.add.text(400, 435, 'HOW TO PLAY  ·  TUTORIAL', {
+            fontSize: '16px', fill: '#FFFFFF', fontStyle: 'bold',
+            stroke: '#08233B', strokeThickness: 3
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.startGame(true));
 
         const shopButton = this.add.rectangle(400, 516, 230, 58, 0x0B3555, 0.95)
