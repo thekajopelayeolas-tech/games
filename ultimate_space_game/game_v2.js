@@ -12,7 +12,7 @@ const SHOP_ITEMS = [
     { id: 'shield', name: 'Shield', description: '10 seconds of shield', icon: 'shop_shield' },
     { id: 'speedBoost', name: 'Speed Boost', description: '10 seconds of extra speed', icon: 'shop_speed' },
     { id: 'rapidFire', name: 'Rapid Fire', description: '10 seconds of rapid fire', icon: 'shop_rapid_fire' },
-    { id: 'triple', name: 'Triple', description: 'Gives 2 random temporary cruisers', icon: 'shop_triple' }
+    { id: 'triple', name: 'Triple', description: '2 random cruisers fly beside you and fire', icon: 'shop_triple' }
 ];
 const UPGRADE_ITEMS = [
     { id: 'shieldLives', name: 'Shield Upgrade', description: '+1 starting heart per level', cost: 200 },
@@ -913,18 +913,8 @@ class MainGameScene extends Phaser.Scene {
                     this.updateHearts();
                 }
             }
-            if (type === 9) { // Triple (Power-up 19): two random temporary cruisers
-                const cruiserKeys = CRUISER_SHOP_ITEMS.map(item => item.key);
-                const ownedKeys = this.getAvailableCruisers();
-                const candidates = Phaser.Utils.Array.Shuffle(cruiserKeys.filter(key => !ownedKeys.includes(key)));
-                const granted = candidates.slice(0, 2);
-                granted.forEach(key => this.runOnlyCruisers.push(key));
-                if (granted.length) {
-                    const names = granted.map(key => key.replace('ship_cruiser_', 'Cruiser ')).join(' and ');
-                    this.showShipMessage('Triple! ' + names + ' temporary! Press X to select; lost after this run');
-                } else {
-                    this.showShipMessage('Triple! You already own every cruiser');
-                }
+            if (type === 9) { // Triple (Power-up 19): two random helper ships on each side of the player
+                this.spawnTripleHelpers();
             }
             if (type === 8) { // Rapid Fire
                 this.rapidFire = true;
@@ -1244,7 +1234,48 @@ class MainGameScene extends Phaser.Scene {
         this.updateSpecialText();
     }
 
+    spawnTripleHelpers() {
+        // Remove any helpers from a previous Triple so they don't stack.
+        this.removeTripleHelpers();
+        const cruiserKeys = CRUISER_SHOP_ITEMS.map(item => item.key);
+        const shipKeys = Phaser.Utils.Array.Shuffle(cruiserKeys.slice()).slice(0, 2);
+        const duration = this.getPowerupDuration('rapidFireDuration');
+        this.tripleHelpers = shipKeys.map((shipKey, index) => {
+            const side = index === 0 ? -1 : 1;
+            const helper = this.add.image(this.player.x + side * 90, this.player.y, shipKey).setScale(0.3).setDepth(900);
+            helper.setData('side', side);
+            return helper;
+        });
+        this.tripleHelperFireEvent = this.time.addEvent({
+            delay: 400,
+            loop: true,
+            callback: () => this.fireTripleHelpers()
+        });
+        this.tripleHelperEndEvent = this.time.delayedCall(duration, () => this.removeTripleHelpers());
+        this.showShipMessage('TRIPLE! Two cruisers join you for ' + Math.round(duration / 1000) + ' seconds');
+    }
+
+    fireTripleHelpers() {
+        if (!this.tripleHelpers) return;
+        this.tripleHelpers.forEach(helper => {
+            if (!helper.active) return;
+            const bullet = this.bullets.create(helper.x, helper.y - 30, 'bullet');
+            bullet.setVelocityY(-400);
+            bullet.setScale(0.7);
+        });
+    }
+
+    removeTripleHelpers() {
+        if (this.tripleHelperFireEvent) this.tripleHelperFireEvent.remove(false);
+        if (this.tripleHelperEndEvent) this.tripleHelperEndEvent.remove(false);
+        this.tripleHelperFireEvent = null;
+        this.tripleHelperEndEvent = null;
+        if (this.tripleHelpers) this.tripleHelpers.forEach(helper => helper.destroy());
+        this.tripleHelpers = null;
+    }
+
     finishRun() {
+        this.removeTripleHelpers();
         if (this.engineSound) this.engineSound.stop();
         this.game.registry.set('lastRunScore', this.score);
         this.scene.start('GameOverScene');
@@ -1288,10 +1319,7 @@ class MainGameScene extends Phaser.Scene {
                     this.rapidFireSpeedBonus = 0;
                 });
             } else if (purchase === 'triple') {
-                const cruiserKeys = CRUISER_SHOP_ITEMS.map(item => item.key);
-                const ownedKeys = this.getAvailableCruisers();
-                const candidates = Phaser.Utils.Array.Shuffle(cruiserKeys.filter(key => !ownedKeys.includes(key)));
-                candidates.slice(0, 2).forEach(key => this.runOnlyCruisers.push(key));
+                this.spawnTripleHelpers();
             }
         }
     }
@@ -1604,6 +1632,12 @@ class MainGameScene extends Phaser.Scene {
         if (this.shieldBubble) {
             this.shieldBubble.x = this.player.x;
             this.shieldBubble.y = this.player.y;
+        }
+        if (this.tripleHelpers) {
+            this.tripleHelpers.forEach(helper => {
+                helper.x = this.player.x + helper.getData('side') * 90;
+                helper.y = this.player.y;
+            });
         }
 
         const cruiserSpeedBonus = this.currentShip === 'ship_cruiser_3' ? 50 : 0;
