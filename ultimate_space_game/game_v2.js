@@ -329,11 +329,11 @@ class StartScene extends Phaser.Scene {
             store.add(this.add.text(230, rowY, item.name, {
                 fontSize: '19px', fill: '#FFFFFF', fontStyle: 'bold'
             }).setOrigin(0, 0.5));
-            const actionText = item.owned ? 'OWNED' : 'BUY ' + CRUISER_COST;
+            const actionText = isOwned ? 'OWNED' : 'BUY ' + CRUISER_COST;
             const action = this.add.text(575, rowY, actionText, {
-                fontSize: '16px', fill: item.owned ? '#68E68C' : '#FFE66D', fontStyle: 'bold'
+                fontSize: '16px', fill: isOwned ? '#68E68C' : '#FFE66D', fontStyle: 'bold'
             }).setOrigin(0.5);
-            if (!item.owned) {
+            if (!isOwned) {
                 row.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buyCruiser(item));
                 action.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buyCruiser(item));
             }
