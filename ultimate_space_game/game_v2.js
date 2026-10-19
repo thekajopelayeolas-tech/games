@@ -111,9 +111,9 @@ const PLAYFIELD_HEIGHT = 600;
 // Zooms the 800 x 600 playfield to fit the current phone/browser window and keeps it centered.
 // Layout stays in playfield coordinates, so nothing needs to be repositioned for each screen size.
 // Multiplier on the width fit. 1 = playfield exactly as wide as the screen (laptop or phone).
-const PLAYFIELD_SCREEN_FILL = 0.6;
+const PLAYFIELD_SCREEN_FILL = 1.1;
 // Horizontal offset in world units. 0 = centered.
-const PLAYFIELD_SHIFT_X = 60;
+const PLAYFIELD_SHIFT_X = 0;
 
 function getPlayfieldCenterX() {
     return PLAYFIELD_WIDTH / 2 + PLAYFIELD_SHIFT_X;
