@@ -86,12 +86,12 @@ function saveValue(key, value) {
     }
 }
 
-function styleSpaceTitle(title, size = 28, glowColor = '#29DFFF') {
+function styleSpaceTitle(title, size = 28, glowColor = '#00ff00') {
     return title
-        .setFontFamily('Arial Black, Arial, sans-serif')
+        .setFontFamily('Courier New, Courier, monospace')
         .setFontStyle('bold')
-        .setColor('#D9FBFF')
-        .setStroke('#171A65', Math.max(3, Math.round(size / 9)))
+        .setColor('#00ff00')
+        .setStroke('#000000', Math.max(3, Math.round(size / 9)))
         .setShadow(0, 0, glowColor, 14, true, true);
 }
 
@@ -306,13 +306,13 @@ class StartScene extends Phaser.Scene {
         if (this.shopContainer) return;
         this.ownedCruisers = this.getOwnedCruisers();
         const store = this.add.container(0, 0).setDepth(1000);
-        store.add(this.add.rectangle(400, 300, 800, 600, 0x000000, 0.8).setInteractive());
-        store.add(this.add.rectangle(400, 300, 560, 460, 0x071426, 0.99).setStrokeStyle(3, 0x68E68C));
+        // Clean terminal look: remove heavy black background
+        
         styleSpaceTitle(this.add.text(400, 90, 'CRUISER SHOP', {
             fontSize: '30px'
-        }).setOrigin(0.5), 30, '#68E68C');
+        }).setOrigin(0.5), 30, '#00ff00');
         store.add(this.add.text(400, 124, 'Each new cruiser costs ' + CRUISER_COST + ' credits', {
-            fontSize: '17px', fill: '#FFE66D'
+            fontSize: '17px', fill: '#00ff00', fontFamily: 'Courier New, Courier, monospace'
         }).setOrigin(0.5));
 
         const displayItems = [
@@ -322,30 +322,36 @@ class StartScene extends Phaser.Scene {
         displayItems.forEach((item, index) => {
             const rowY = 170 + index * 55;
             const isOwned = this.ownedCruisers.includes(item.key);
-            const row = this.add.rectangle(400, rowY, 500, 54, 0x12304A, 0.98)
-                .setStrokeStyle(1, 0x2A7294);
-            store.add(row);
+            
+            // Minimalist row indicator
+            store.add(this.add.line(400, rowY + 25, 0, 0, 500, 0, 0x00ff00, 0.3).setLineWidth(1));
+            
             store.add(this.add.image(190, rowY, 'store_' + item.key).setDisplaySize(42, 42));
             store.add(this.add.text(230, rowY, item.name, {
-                fontSize: '19px', fill: '#FFFFFF', fontStyle: 'bold'
+                fontSize: '19px', fill: '#FFFFFF', fontStyle: 'bold', fontFamily: 'Courier New, Courier, monospace'
             }).setOrigin(0, 0.5));
+            
             const actionText = isOwned ? 'OWNED' : 'BUY ' + CRUISER_COST;
             const action = this.add.text(575, rowY, actionText, {
-                fontSize: '16px', fill: isOwned ? '#68E68C' : '#FFE66D', fontStyle: 'bold'
+                fontSize: '16px', fill: isOwned ? '#00ff00' : '#ffff00', fontStyle: 'bold', fontFamily: 'Courier New, Courier, monospace'
             }).setOrigin(0.5);
+            
             if (!isOwned) {
-                row.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buyCruiser(item));
+                // Interactive hit area (invisible)
+                const hitArea = this.add.rectangle(400, rowY, 500, 50, 0xffffff, 0).setInteractive({ useHandCursor: true });
+                hitArea.on('pointerdown', () => this.buyCruiser(item));
+                store.add(hitArea);
                 action.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buyCruiser(item));
             }
             store.add(action);
         });
 
         this.cruiserShopStatus = this.add.text(400, 445, 'Credits: ' + this.credits, {
-            fontSize: '18px', fill: '#FFE66D'
+            fontSize: '18px', fill: '#ffff00', fontFamily: 'Courier New, Courier, monospace'
         }).setOrigin(0.5);
         store.add(this.cruiserShopStatus);
         const close = this.add.text(400, 485, 'CLOSE', {
-            fontSize: '17px', fill: '#FFFFFF', backgroundColor: '#14527A', padding: { x: 16, y: 7 }
+            fontSize: '17px', fill: '#FFFFFF', backgroundColor: '#003300', padding: { x: 16, y: 7 }, fontFamily: 'Courier New, Courier, monospace'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         close.on('pointerdown', () => this.hideShop());
         store.add(close);
