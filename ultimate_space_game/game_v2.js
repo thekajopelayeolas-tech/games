@@ -835,7 +835,6 @@ class MainGameScene extends Phaser.Scene {
         
         this.asteroids = this.physics.add.group();
         // Black side bars block everything: ship, asteroids, bullets, power-ups, and cruiser pickups.
-        this.physics.add.collider(this.player, this.borderBars);
         this.physics.add.collider(this.asteroids, this.borderBars, (asteroid) => asteroid.destroy());
         this.physics.add.collider(this.bullets, this.borderBars, (bullet) => bullet.destroy());
         this.physics.add.collider(this.powerups, this.borderBars, (powerup) => powerup.destroy());
@@ -1789,6 +1788,14 @@ class MainGameScene extends Phaser.Scene {
         else if (this.cursors.right.isDown || this.touchInput.right) this.player.setVelocityX(speed);
         else this.player.setVelocityX(0);
         this.player.setVelocityY(0); // The ship moves only left and right
+
+        // Keep the ship inside the black side bars. Both bodies are immovable, so physics can't stop it.
+        const halfShipWidth = this.player.displayWidth / 2;
+        this.player.x = Phaser.Math.Clamp(
+            this.player.x,
+            PLAYFIELD_BORDER_LEFT + halfShipWidth,
+            PLAYFIELD_WIDTH - PLAYFIELD_BORDER_RIGHT - halfShipWidth
+        );
 
         const hasRapidFire = this.rapidFire || this.currentShip === 'ship_cruiser_8';
         let canFire = false;
