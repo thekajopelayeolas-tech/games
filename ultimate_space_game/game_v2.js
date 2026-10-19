@@ -11,7 +11,8 @@ const SHOP_ITEMS = [
     { id: 'bulletUpgrade', name: 'Bullet Upgrade', description: '+2 starting bullets (max 3)', icon: 'shop_bullet' },
     { id: 'shield', name: 'Shield', description: '10 seconds of shield', icon: 'shop_shield' },
     { id: 'speedBoost', name: 'Speed Boost', description: '10 seconds of extra speed', icon: 'shop_speed' },
-    { id: 'rapidFire', name: 'Rapid Fire', description: '10 seconds of rapid fire', icon: 'shop_rapid_fire' }
+    { id: 'rapidFire', name: 'Rapid Fire', description: '10 seconds of rapid fire', icon: 'shop_rapid_fire' },
+    { id: 'triple', name: 'Triple', description: 'Gives 2 random temporary cruisers', icon: 'shop_triple' }
 ];
 const UPGRADE_ITEMS = [
     { id: 'shieldLives', name: 'Shield Upgrade', description: '+1 starting heart per level', cost: 200 },
@@ -153,6 +154,7 @@ class StartScene extends Phaser.Scene {
         this.load.image('shop_shield', './assets/space_intruder/ui/power_up_1.png');
         this.load.image('shop_speed', './assets/space_intruder/ui/power_up_3.png');
         this.load.image('shop_rapid_fire', './assets/space_intruder/sprites/space_rocket_4.png');
+        this.load.image('shop_triple', './assets/space_intruder/ui/power_up_19.png');
         this.load.image('store_player', './assets/space_intruder/sprites/space_cruiser_7.png');
         CRUISER_SHOP_ITEMS.forEach(item => this.load.image('store_' + item.key, item.image));
     }
@@ -432,7 +434,7 @@ class StartScene extends Phaser.Scene {
         }).setOrigin(0.5));
 
         SHOP_ITEMS.forEach((item, index) => {
-            const rowY = 158 + index * 61;
+            const rowY = 158 + index * 52;
             const row = this.add.rectangle(400, rowY, 510, 53, 0x12304A, 0.98)
                 .setStrokeStyle(1, 0x2A7294).setInteractive({ useHandCursor: true });
             row.on('pointerdown', () => this.buyShopItem(item));
@@ -1285,6 +1287,11 @@ class MainGameScene extends Phaser.Scene {
                     this.rapidFire = false;
                     this.rapidFireSpeedBonus = 0;
                 });
+            } else if (purchase === 'triple') {
+                const cruiserKeys = CRUISER_SHOP_ITEMS.map(item => item.key);
+                const ownedKeys = this.getAvailableCruisers();
+                const candidates = Phaser.Utils.Array.Shuffle(cruiserKeys.filter(key => !ownedKeys.includes(key)));
+                candidates.slice(0, 2).forEach(key => this.runOnlyCruisers.push(key));
             }
         }
     }
