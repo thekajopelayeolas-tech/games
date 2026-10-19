@@ -325,7 +325,7 @@ class StartScene extends Phaser.Scene {
             const row = this.add.rectangle(400, rowY, 500, 54, 0x12304A, 0.98)
                 .setStrokeStyle(1, 0x2A7294);
             store.add(row);
-            store.add(this.add.image(190, rowY, 'store_' + item.key).setDisplaySize(42, 42));
+            store.add(this.add.image(190, rowY, 'store_' + item.key).setDisplaySize(42, 42).setFlipY(true));
             store.add(this.add.text(230, rowY, item.name, {
                 fontSize: '19px', fill: '#FFFFFF', fontStyle: 'bold'
             }).setOrigin(0, 0.5));
@@ -553,7 +553,7 @@ class MainGameScene extends Phaser.Scene {
         const savedShip = this.game.registry.get('selectedCruiser');
         this.currentShip = this.unlockedCruisers.includes(savedShip) ? savedShip : 'player';
         this.upgradeLevels = { ...DEFAULT_UPGRADES, ...readSavedValue('spaceGameUpgrades', {}) };
-        this.player = this.physics.add.sprite(400, 550, this.currentShip).setScale(0.4);
+        this.player = this.physics.add.sprite(400, 550, this.currentShip).setScale(0.4).setFlipY(true);
         this.player.setCollideWorldBounds(true);
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -1352,7 +1352,7 @@ class MainGameScene extends Phaser.Scene {
             row.on('pointerdown', () => this.selectCruiser(shipKey));
             menu.add(row);
 
-            const shipImage = this.add.image(260, rowY, shipKey).setDisplaySize(42, 42);
+            const shipImage = this.add.image(260, rowY, shipKey).setDisplaySize(42, 42).setFlipY(true);
             menu.add(shipImage);
             const shipName = shipKey === 'player'
                 ? 'Cruiser 7'
