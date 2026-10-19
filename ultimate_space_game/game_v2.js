@@ -95,6 +95,53 @@ function styleSpaceTitle(title, size = 28, glowColor = '#29DFFF') {
         .setShadow(0, 0, glowColor, 14, true, true);
 }
 
+const PLAYFIELD_WIDTH = 800;
+const PLAYFIELD_HEIGHT = 600;
+
+// Zooms the 800 x 600 playfield to fit the current phone/browser window and keeps it centered.
+// Layout stays in playfield coordinates, so nothing needs to be repositioned for each screen size.
+// Multiplier on the width fit. 1 = playfield exactly as wide as the screen (laptop or phone).
+const PLAYFIELD_SCREEN_FILL = 1;
+// Horizontal offset in world units. 0 = centered.
+const PLAYFIELD_SHIFT_X = 0;
+
+function getPlayfieldCenterX() {
+    return PLAYFIELD_WIDTH / 2 + PLAYFIELD_SHIFT_X;
+}
+
+function getPlayfieldZoom(scene) {
+    return (scene.scale.width / PLAYFIELD_WIDTH) * PLAYFIELD_SCREEN_FILL;
+}
+
+function fitPlayfieldCamera(scene) {
+    const applyFit = () => {
+        const camera = scene.cameras.main;
+        camera.setZoom(getPlayfieldZoom(scene));
+        camera.centerOn(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2);
+    };
+    applyFit();
+    if (!scene.__playfieldFitInstalled) {
+        scene.__playfieldFitInstalled = true;
+        scene.scale.on('resize', applyFit);
+        scene.events.once('shutdown', () => scene.scale.off('resize', applyFit));
+    }
+}
+
+// Adds a background image that covers everything the camera can see, including the area outside the playfield.
+function addFullScreenBackground(scene, key) {
+    const image = scene.add.image(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2, key).setDepth(-1000);
+    const resizeImage = () => {
+        const zoom = getPlayfieldZoom(scene);
+        const visibleWidth = Math.max(PLAYFIELD_WIDTH, scene.scale.width / zoom);
+        const visibleHeight = Math.max(PLAYFIELD_HEIGHT, scene.scale.height / zoom);
+        image.setPosition(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2).setDisplaySize(visibleWidth, visibleHeight);
+    };
+    resizeImage();
+    scene.scale.on('resize', resizeImage);
+    scene.events.once('shutdown', () => scene.scale.off('resize', resizeImage));
+    return image;
+}
+
 // Start Scene
 class StartScene extends Phaser.Scene {
     constructor() { super('StartScene'); }
@@ -110,8 +157,8 @@ class StartScene extends Phaser.Scene {
         CRUISER_SHOP_ITEMS.forEach(item => this.load.image('store_' + item.key, item.image));
     }
     create() {
-        this.cameras.main.setBackgroundColor('#ff00ff'); // Make start scene magenta
-        this.add.image(400, 300, 'start_bg').setDisplaySize(800, 600);
+        fitPlayfieldCamera(this);
+        addFullScreenBackground(this, 'start_bg');
         this.createSpaceAmbience();
         this.add.ellipse(400, 330, 510, 460, 0x3520A0, 0.12).setDepth(0);
         const titleUnderline = this.add.rectangle(400, 116, 350, 2, 0x66EFFF, 0.9).setDepth(2);
@@ -538,8 +585,8 @@ class MainGameScene extends Phaser.Scene {
         this.load.audio('laser_sound', './assets/space_intruder/sounds/laser_1.mp3');
     }
     create() {
-        // Add background
-        this.add.image(400, 300, 'main_bg').setDisplaySize(800, 600);
+        fitPlayfieldCamera(this);
+        addFullScreenBackground(this, 'main_bg');
 
         const paidCruisers = this.game.registry.get('unlockedCruisers') || ['player'];
         this.unlockedCruisers = paidCruisers.filter(key =>
@@ -555,6 +602,7 @@ class MainGameScene extends Phaser.Scene {
         this.upgradeLevels = { ...DEFAULT_UPGRADES, ...readSavedValue('spaceGameUpgrades', {}) };
         this.player = this.physics.add.sprite(400, 550, this.currentShip).setScale(0.4).setFlipY(true);
         this.player.setCollideWorldBounds(true);
+        this.player.setImmovable(true); // Asteroid hits can't push the ship up/down or sideways
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.shipSwitchKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
@@ -1494,6 +1542,13 @@ class MainGameScene extends Phaser.Scene {
             });
         }
 
+        // Asteroids only fall straight down: remove any sideways velocity picked up from collisions.
+        this.asteroids.getChildren().forEach(asteroid => {
+            if (asteroid.active && asteroid.body && asteroid.body.velocity.x !== 0) {
+                asteroid.setVelocityX(0);
+            }
+        });
+
         if (Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
             this.scene.launch('PauseScene');
             this.scene.pause();
@@ -1535,6 +1590,7 @@ class MainGameScene extends Phaser.Scene {
         if (this.cursors.left.isDown || this.touchInput.left) this.player.setVelocityX(-speed);
         else if (this.cursors.right.isDown || this.touchInput.right) this.player.setVelocityX(speed);
         else this.player.setVelocityX(0);
+        this.player.setVelocityY(0); // The ship moves only left and right
 
         const hasRapidFire = this.rapidFire || this.currentShip === 'ship_cruiser_8';
         let canFire = false;
@@ -1573,6 +1629,7 @@ class PauseScene extends Phaser.Scene {
     constructor() { super('PauseScene'); }
 
     create() {
+        fitPlayfieldCamera(this);
         this.add.rectangle(400, 300, 800, 600, 0x000000, 0.72);
         this.add.text(400, 250, 'Ⅱ', {
             fontSize: '112px',
@@ -1650,7 +1707,8 @@ class GameOverScene extends Phaser.Scene {
         this.load.image('button', './assets/game_over_space_invader/ui/round_buttons_3.png');
     }
     create() {
-        this.add.image(400, 300, 'go_bg').setDisplaySize(800, 600);
+        fitPlayfieldCamera(this);
+        addFullScreenBackground(this, 'go_bg');
         styleSpaceTitle(this.add.text(400, 300, 'GAME OVER', { fontSize: '64px' }).setOrigin(0.5), 64, '#FF3D6E');
         const runScore = Math.max(0, Number(this.game.registry.get('lastRunScore')) || 0);
         const credits = Math.max(0, Number(readSavedValue('spaceGameCredits', 0)) || 0) + runScore;
@@ -1667,12 +1725,11 @@ class GameOverScene extends Phaser.Scene {
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'game-root',
     scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
+        mode: Phaser.Scale.RESIZE,
         fullscreenTarget: document.body
     },
     physics: {
