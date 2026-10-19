@@ -14,6 +14,15 @@ const SHOP_ITEMS = [
     { id: 'rapidFire', name: 'Rapid Fire', description: '10 seconds of rapid fire', icon: 'shop_rapid_fire' },
     { id: 'triple', name: 'Triple', description: '2 random cruisers fly beside you and fire', icon: 'shop_triple' }
 ];
+const SPECIAL_ABILITY_COST = 2000;
+const SPECIAL_ABILITY_LIMIT = 3;
+const SPECIAL_ABILITY_SHOP_ITEMS = [
+    { id: 'shieldPulse', name: 'Shield Pulse', description: '4s shield' },
+    { id: 'speedBurst', name: 'Speed Burst', description: '4s speed boost' },
+    { id: 'repair', name: 'Repair', description: '+1 heart' },
+    { id: 'rapidOverdrive', name: 'Rapid Overdrive', description: '4s faster fire' },
+    { id: 'asteroidSalvo', name: 'Asteroid Salvo', description: 'Clear asteroids' }
+];
 const UPGRADE_ITEMS = [
     { id: 'shieldLives', name: 'Shield Upgrade', description: '+1 starting heart per level', cost: 200 },
     { id: 'bulletUpgrade', name: 'Bullet Power', description: '+1 starting bullet per level', cost: 150 },
@@ -102,16 +111,18 @@ const PLAYFIELD_HEIGHT = 600;
 // Zooms the 800 x 600 playfield to fit the current phone/browser window and keeps it centered.
 // Layout stays in playfield coordinates, so nothing needs to be repositioned for each screen size.
 // Multiplier on the width fit. 1 = playfield exactly as wide as the screen (laptop or phone).
-const PLAYFIELD_SCREEN_FILL = 0.8;
+const PLAYFIELD_SCREEN_FILL = 0.6;
 // Horizontal offset in world units. 0 = centered.
-const PLAYFIELD_SHIFT_X = 0;
+const PLAYFIELD_SHIFT_X = 60;
 
 function getPlayfieldCenterX() {
     return PLAYFIELD_WIDTH / 2 + PLAYFIELD_SHIFT_X;
 }
 
 function getPlayfieldZoom(scene) {
-    return (scene.scale.width / PLAYFIELD_WIDTH) * PLAYFIELD_SCREEN_FILL;
+    // Never zoom past 1x, so a wide laptop window shows the game at its base size instead of enlarging it.
+    const widthFit = Math.min(scene.scale.width / PLAYFIELD_WIDTH, 1);
+    return widthFit * PLAYFIELD_SCREEN_FILL;
 }
 
 function fitPlayfieldCamera(scene) {
@@ -135,7 +146,9 @@ function addFullScreenBackground(scene, key) {
         const zoom = getPlayfieldZoom(scene);
         const visibleWidth = Math.max(PLAYFIELD_WIDTH, scene.scale.width / zoom);
         const visibleHeight = Math.max(PLAYFIELD_HEIGHT, scene.scale.height / zoom);
-        image.setPosition(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2).setDisplaySize(visibleWidth, visibleHeight);
+        // Uniform scale keeps the artwork's proportions; the overflow is cropped off-screen.
+        const coverScale = Math.max(visibleWidth / image.width, visibleHeight / image.height);
+        image.setPosition(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2).setScale(coverScale);
     };
     resizeImage();
     scene.scale.on('resize', resizeImage);
@@ -265,6 +278,14 @@ class StartScene extends Phaser.Scene {
             fontSize: '22px'
         }).setOrigin(0.5), 22).setInteractive().on('pointerdown', () => this.showShop());
         this.bindMenuHover(shopButton, '#42D9FF');
+
+        const abilityShopButton = this.add.rectangle(640, 516, 230, 58, 0x3A2A08, 0.95)
+            .setStrokeStyle(3, 0xFFD166).setInteractive({ useHandCursor: true });
+        abilityShopButton.on('pointerdown', () => this.showSpecialAbilityShop());
+        styleSpaceTitle(this.add.text(640, 516, 'ABILITY SHOP', {
+            fontSize: '22px'
+        }).setOrigin(0.5), 22, '#FFD166').setInteractive().on('pointerdown', () => this.showSpecialAbilityShop());
+        this.bindMenuHover(abilityShopButton, '#FFD166');
         this.add.text(400, 570, '←  → MOVE   SPACE FIRE   C SPECIAL   X SHIPS   Z PAUSE', {
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
@@ -417,6 +438,91 @@ class StartScene extends Phaser.Scene {
         this.hideShop();
         this.showCruiserShop();
         this.cruiserShopStatus.setText(item.name + ' purchased! Credits: ' + this.credits);
+    }
+
+    getOwnedSpecialAbilities() {
+        const saved = readSavedValue('spaceGameSpecialAbilities', []);
+        if (!Array.isArray(saved)) return [];
+        return saved.filter(id => SPECIAL_ABILITY_SHOP_ITEMS.some(item => item.id === id));
+    }
+
+    showSpecialAbilityShop() {
+        if (this.shopContainer) return;
+        const owned = this.getOwnedSpecialAbilities();
+        const store = this.add.container(0, 0).setDepth(1000);
+        store.add(this.add.rectangle(400, 300, 800, 600, 0x000000, 0.8).setInteractive());
+        store.add(this.add.rectangle(400, 300, 560, 460, 0x071426, 0.99).setStrokeStyle(3, 0xFFD166));
+        styleSpaceTitle(this.add.text(400, 90, 'ABILITY SHOP', {
+            fontSize: '30px'
+        }).setOrigin(0.5), 30, '#FFD166');
+        store.add(this.add.text(400, 124, 'Each ability costs ' + SPECIAL_ABILITY_COST + ' credits  •  Buy up to ' + SPECIAL_ABILITY_LIMIT, {
+            fontSize: '17px', fill: '#FFE66D'
+        }).setOrigin(0.5));
+
+        SPECIAL_ABILITY_SHOP_ITEMS.forEach((item, index) => {
+            const rowY = 170 + index * 55;
+            const isOwned = owned.includes(item.id);
+            const limitReached = owned.length >= SPECIAL_ABILITY_LIMIT;
+            const row = this.add.rectangle(400, rowY, 500, 54, 0x12304A, 0.98)
+                .setStrokeStyle(1, 0x2A7294);
+            store.add(row);
+            store.add(this.add.text(230, rowY - 10, item.name, {
+                fontSize: '18px', fill: '#FFFFFF', fontStyle: 'bold'
+            }).setOrigin(0, 0.5));
+            store.add(this.add.text(230, rowY + 12, item.description, {
+                fontSize: '13px', fill: '#BBDDEE'
+            }).setOrigin(0, 0.5));
+            let actionText = 'BUY ' + SPECIAL_ABILITY_COST;
+            let actionColor = '#FFE66D';
+            if (isOwned) {
+                actionText = 'OWNED';
+                actionColor = '#68E68C';
+            } else if (limitReached) {
+                actionText = 'LIMIT';
+                actionColor = '#AAAAAA';
+            }
+            const action = this.add.text(575, rowY, actionText, {
+                fontSize: '16px', fill: actionColor, fontStyle: 'bold'
+            }).setOrigin(0.5);
+            if (!isOwned && !limitReached) {
+                row.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buySpecialAbility(item));
+                action.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.buySpecialAbility(item));
+            }
+            store.add(action);
+        });
+
+        this.abilityShopStatus = this.add.text(400, 445, 'Credits: ' + this.credits + '  •  Owned: ' + owned.length + '/' + SPECIAL_ABILITY_LIMIT, {
+            fontSize: '18px', fill: '#FFE66D'
+        }).setOrigin(0.5);
+        store.add(this.abilityShopStatus);
+        const close = this.add.text(400, 485, 'CLOSE', {
+            fontSize: '17px', fill: '#FFFFFF', backgroundColor: '#14527A', padding: { x: 16, y: 7 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        close.on('pointerdown', () => this.hideShop());
+        store.add(close);
+        this.shopContainer = store;
+    }
+
+    buySpecialAbility(item) {
+        const owned = this.getOwnedSpecialAbilities();
+        if (owned.includes(item.id)) return;
+        if (owned.length >= SPECIAL_ABILITY_LIMIT) {
+            this.abilityShopStatus.setText('You can only buy ' + SPECIAL_ABILITY_LIMIT + ' special abilities');
+            return;
+        }
+        if (this.credits < SPECIAL_ABILITY_COST) {
+            this.abilityShopStatus.setText('Not enough credits!  Balance: ' + this.credits);
+            return;
+        }
+
+        this.credits -= SPECIAL_ABILITY_COST;
+        owned.push(item.id);
+        saveValue('spaceGameCredits', this.credits);
+        saveValue('spaceGameSpecialAbilities', owned);
+        this.creditsText.setText('Credits: ' + this.credits);
+        this.hideShop();
+        this.showSpecialAbilityShop();
+        this.abilityShopStatus.setText(item.name + ' purchased! Credits: ' + this.credits);
     }
 
     showShop() {
