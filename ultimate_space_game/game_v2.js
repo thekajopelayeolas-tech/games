@@ -140,8 +140,8 @@ function getPlayfieldCenterX() {
     return (visibleLeft + visibleRight) / 2;
 }
 
-// Main Game sprites are enlarged by this factor; the background is counter-scaled so it stays screen-sized.
-const MAIN_GAME_SPRITE_SCALE = 1.25;
+// Main Game scene zoom: the sprites, background, and border bars all grow by this factor.
+const MAIN_GAME_SPRITE_SCALE = 1.8;
 
 function getPlayfieldZoom(scene) {
     // Never zoom past 1x, so a wide laptop window shows the game at its base size instead of enlarging it.
@@ -176,9 +176,8 @@ function addFullScreenBackground(scene, key) {
         const visibleHeight = Math.max(PLAYFIELD_HEIGHT, scene.scale.height / zoom);
         // Uniform scale keeps the artwork's proportions; the overflow is cropped off-screen.
         const coverScale = Math.max(visibleWidth / image.width, visibleHeight / image.height);
-        // Undo the camera zoom so the background keeps its screen size while sprites are enlarged.
-        const counterScale = scene.useSpawnWidthFit ? 1 / MAIN_GAME_SPRITE_SCALE : 1;
-        image.setPosition(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2).setScale(coverScale * counterScale);
+        // The background is scaled with the camera zoom, so it grows along with the game scene.
+        image.setPosition(getPlayfieldCenterX(), PLAYFIELD_HEIGHT / 2).setScale(coverScale);
     };
     resizeImage();
     scene.scale.on('resize', resizeImage);
