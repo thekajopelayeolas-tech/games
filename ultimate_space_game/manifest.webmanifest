@@ -1,0 +1,15 @@
+{
+    "name": "Jeds Game",
+    "short_name": "Jeds Game",
+    "description": "A space shooter with a flight-school tutorial, power-ups, cruisers, and shops.",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "fullscreen",
+    "orientation": "any",
+    "background_color": "#050505",
+    "theme_color": "#080d20",
+    "icons": [
+        { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    ]
+}

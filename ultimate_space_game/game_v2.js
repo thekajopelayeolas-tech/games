@@ -115,8 +115,8 @@ const PLAYFIELD_SCREEN_FILL = 1.2;
 // Invisible side borders, in world units hidden from each edge of the playfield (Main Game only).
 // Left and right are set independently: raise one to hide more of that side.
 // Both default to 30, which matches the asteroid spawn span (x 30 to 770).
-const PLAYFIELD_BORDER_LEFT = 30;
-const PLAYFIELD_BORDER_RIGHT = 30;
+const PLAYFIELD_BORDER_LEFT = 110;
+const PLAYFIELD_BORDER_RIGHT = 110;
 
 // Paints the left and right border strips black and makes them solid (Main Game only).
 // Set a border to 0 to remove its bar. Returns a static group that other objects can collide with.
