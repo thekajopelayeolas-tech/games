@@ -840,7 +840,11 @@ class MainGameScene extends Phaser.Scene {
         
         this.asteroids = this.physics.add.group();
         // Black side bars block everything: ship, asteroids, bullets, power-ups, and cruiser pickups.
-        this.physics.add.collider(this.asteroids, this.borderBars, (asteroid) => asteroid.destroy());
+        // Bosses are huge (scale 14, about 896 px wide), so they overlap the side bars. They are excluded here.
+        // Regular asteroids are removed when they touch a bar.
+        this.physics.add.overlap(this.asteroids, this.borderBars, (asteroid) => {
+            if (!asteroid.getData('isBoss')) asteroid.destroy();
+        });
         this.physics.add.collider(this.bullets, this.borderBars, (bullet) => bullet.destroy());
         this.physics.add.collider(this.powerups, this.borderBars, (powerup) => powerup.destroy());
         this.physics.add.collider(this.shipPickups, this.borderBars, (pickup) => pickup.destroy());
