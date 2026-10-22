@@ -23,6 +23,17 @@ const SPECIAL_ABILITY_SHOP_ITEMS = [
     { id: 'rapidOverdrive', name: 'Rapid Overdrive', description: '4s faster fire' },
     { id: 'asteroidSalvo', name: 'Asteroid Salvo', description: 'Clear asteroids' }
 ];
+// Ability each cruiser uses when you own no Ability Shop abilities.
+const SHIP_SPECIAL_ABILITY_IDS = {
+    player: 'shieldPulse',
+    ship_cruiser_3: 'speedBurst',
+    ship_cruiser_4: 'repair',
+    ship_cruiser_8: 'rapidOverdrive',
+    ship_cruiser_9: 'asteroidSalvo'
+};
+function getSpecialAbilityItem(id) {
+    return SPECIAL_ABILITY_SHOP_ITEMS.find(item => item.id === id);
+}
 const UPGRADE_ITEMS = [
     { id: 'shieldLives', name: 'Shield Upgrade', description: '+1 starting heart per level', cost: 200 },
     { id: 'bulletUpgrade', name: 'Bullet Power', description: '+1 starting bullet per level', cost: 150 },
@@ -79,6 +90,13 @@ const TUTORIAL_LESSONS = [
     }
 ];
 
+// Ability ids bought in the Ability Shop, with any unknown ids removed.
+function getOwnedSpecialAbilityIds() {
+    const saved = readSavedValue('spaceGameSpecialAbilities', []);
+    if (!Array.isArray(saved)) return [];
+    return saved.filter(id => SPECIAL_ABILITY_SHOP_ITEMS.some(item => item.id === id));
+}
+
 function readSavedValue(key, fallback) {
     try {
         const value = localStorage.getItem(key);
@@ -114,9 +132,9 @@ const PLAYFIELD_HEIGHT = 600;
 const PLAYFIELD_SCREEN_FILL = 1.2;
 // Invisible side borders, in world units hidden from each edge of the playfield (Main Game only).
 // Left and right are set independently: raise one to hide more of that side.
-// Both default to 30, which matches the asteroid spawn span (x 30 to 770).
-const PLAYFIELD_BORDER_LEFT = 110;
-const PLAYFIELD_BORDER_RIGHT = 110;
+// Both are 0 so nothing in the Main Game is hidden.
+const PLAYFIELD_BORDER_LEFT = 0;
+const PLAYFIELD_BORDER_RIGHT = 0;
 
 // Paints the left and right border strips black and makes them solid (Main Game only).
 // Set a border to 0 to remove its bar. Returns a static group that other objects can collide with.
@@ -140,15 +158,17 @@ function getPlayfieldCenterX() {
     return (visibleLeft + visibleRight) / 2;
 }
 
-// Main Game scene zoom: the sprites, background, and border bars all grow by this factor.
-const MAIN_GAME_SPRITE_SCALE = 1.8;
+// Largest Main Game zoom, so big monitors still get the enlarged sprites without cropping the playfield.
+const MAIN_GAME_MAX_ZOOM = 1.8;
 
 function getPlayfieldZoom(scene) {
-    // Never zoom past 1x, so a wide laptop window shows the game at its base size instead of enlarging it.
     if (scene.useSpawnWidthFit) {
-        // The full 800-wide playfield stays on screen; the border strips are painted black on top of it.
-        return Math.min(scene.scale.width / PLAYFIELD_WIDTH, 1) * MAIN_GAME_SPRITE_SCALE;
+        // Main Game: zoom so the whole 800 x 600 playfield fits the window (both width and height).
+        // Any larger zoom would push the left and right edges off-screen, hiding sprites and bosses.
+        const fit = Math.min(scene.scale.width / PLAYFIELD_WIDTH, scene.scale.height / PLAYFIELD_HEIGHT);
+        return Math.min(fit, MAIN_GAME_MAX_ZOOM);
     }
+    // Never zoom past 1x, so a wide laptop window shows the game at its base size instead of enlarging it.
     const widthFit = Math.min(scene.scale.width / PLAYFIELD_WIDTH, 1);
     return widthFit * PLAYFIELD_SCREEN_FILL;
 }
@@ -183,6 +203,16 @@ function addFullScreenBackground(scene, key) {
     scene.scale.on('resize', resizeImage);
     scene.events.once('shutdown', () => scene.scale.off('resize', resizeImage));
     return image;
+}
+
+// Asteroids spawn at this y, above the screen. Bullets that reach this line have left the playfield.
+const ASTEROID_SPAWN_Y = -50;
+
+// Deletes every active bullet that has flown up to the asteroid spawn line, so missed shots don't pile up and slow the game.
+function destroyBulletsAtSpawnLine(bullets) {
+    bullets.getChildren().forEach(bullet => {
+        if (bullet.active && bullet.y <= ASTEROID_SPAWN_Y) bullet.destroy();
+    });
 }
 
 // Start Scene
@@ -470,9 +500,7 @@ class StartScene extends Phaser.Scene {
     }
 
     getOwnedSpecialAbilities() {
-        const saved = readSavedValue('spaceGameSpecialAbilities', []);
-        if (!Array.isArray(saved)) return [];
-        return saved.filter(id => SPECIAL_ABILITY_SHOP_ITEMS.some(item => item.id === id));
+        return getOwnedSpecialAbilityIds();
     }
 
     showSpecialAbilityShop() {
@@ -723,7 +751,7 @@ class MainGameScene extends Phaser.Scene {
         this.load.audio('laser_sound', './assets/space_intruder/sounds/laser_1.mp3');
     }
     create() {
-        this.useSpawnWidthFit = true; // Main Game only: show the full playfield with black border bars
+        this.useSpawnWidthFit = true; // Main Game only: show the entire playfield at once
         fitPlayfieldCamera(this);
         addFullScreenBackground(this, 'main_bg');
         this.borderBars = addBorderBars(this);
@@ -785,6 +813,7 @@ class MainGameScene extends Phaser.Scene {
         }
         this.armorText = this.add.text(20, 115, 'Armor: ' + this.armorCharges, { fontSize: '18px', fill: '#77DDFF' });
         this.armorText.setDepth(1000);
+        this.ownedSpecialAbilities = getOwnedSpecialAbilityIds(); // Read once per run so new shop purchases apply
         this.specialAbilityReadyAt = 0;
         this.specialSpeedUntil = 0;
         this.specialRapidFireUntil = 0;
@@ -1228,15 +1257,22 @@ class MainGameScene extends Phaser.Scene {
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('StartScene')));
     }
 
+    getSpecialAbilityIds() {
+        // Every ability bought in the Ability Shop fires on C. With none owned, the selected cruiser's ability is used.
+        if (this.ownedSpecialAbilities.length > 0) return this.ownedSpecialAbilities;
+        return [SHIP_SPECIAL_ABILITY_IDS[this.currentShip] || 'shieldPulse'];
+    }
+
     getSpecialAbility() {
-        const abilities = {
-            player: { name: 'Shield Pulse', description: '4s shield' },
-            ship_cruiser_3: { name: 'Speed Burst', description: '4s speed boost' },
-            ship_cruiser_4: { name: 'Repair', description: '+1 heart' },
-            ship_cruiser_8: { name: 'Rapid Overdrive', description: '4s faster fire' },
-            ship_cruiser_9: { name: 'Asteroid Salvo', description: 'Clear asteroids' }
+        const items = this.getSpecialAbilityIds().map(id => getSpecialAbilityItem(id));
+        // Three owned abilities show as one combined SUPER ABILITY label.
+        if (items.length >= SPECIAL_ABILITY_LIMIT) {
+            return { name: 'SUPER ABILITY', description: items.map(item => item.name).join(', ') };
+        }
+        return {
+            name: items.map(item => item.name).join(' + '),
+            description: items.map(item => item.description).join(' + ')
         };
-        return abilities[this.currentShip] || abilities.player;
     }
 
     updateSpecialText() {
@@ -1319,27 +1355,35 @@ class MainGameScene extends Phaser.Scene {
     activateSpecialAbility() {
         if (this.time.now < this.specialAbilityReadyAt) return;
 
-        this.specialAbilityReadyAt = this.time.now + 15000;
-        switch (this.currentShip) {
-            case 'ship_cruiser_3':
+        // Fire every owned ability at once. Each returns whether it had an effect.
+        const results = this.getSpecialAbilityIds().map(id => this.applySpecialAbility(id));
+        const used = results.filter(result => result.used);
+        if (used.length > 0) {
+            this.specialAbilityReadyAt = this.time.now + 15000;
+            this.showShipMessage(used.map(result => result.message).join(' + '));
+        } else {
+            // Nothing had an effect (for example, Repair at full hearts), so the cooldown is not used.
+            this.showShipMessage(results.map(result => result.message).join(' + '));
+        }
+        this.updateSpecialText();
+    }
+
+    applySpecialAbility(id) {
+        switch (id) {
+            case 'speedBurst':
                 this.specialSpeedUntil = this.time.now + 4000;
-                this.showShipMessage('SPEED BURST!');
-                break;
-            case 'ship_cruiser_4':
+                return { used: true, message: 'SPEED BURST!' };
+            case 'repair':
                 if (this.lives < this.maxLives) {
                     this.lives = Math.min(this.maxLives, this.lives + 1);
                     this.updateHearts();
-                    this.showShipMessage('SHIP REPAIRED! +1 HEART');
-                } else {
-                    this.specialAbilityReadyAt = 0;
-                    this.showShipMessage('HEARTS ALREADY FULL');
+                    return { used: true, message: 'SHIP REPAIRED! +1 HEART' };
                 }
-                break;
-            case 'ship_cruiser_8':
+                return { used: false, message: 'HEARTS ALREADY FULL' };
+            case 'rapidOverdrive':
                 this.specialRapidFireUntil = this.time.now + 4000;
-                this.showShipMessage('RAPID OVERDRIVE!');
-                break;
-            case 'ship_cruiser_9': {
+                return { used: true, message: 'RAPID OVERDRIVE!' };
+            case 'asteroidSalvo': {
                 const targets = this.asteroids.getChildren().slice();
                 const boss = targets.find(asteroid => asteroid.getData('isBoss'));
                 const regularAsteroids = targets.filter(asteroid => !asteroid.getData('isBoss'));
@@ -1357,9 +1401,9 @@ class MainGameScene extends Phaser.Scene {
                 blast.play('explode');
                 blast.on('animationcomplete', () => blast.destroy());
                 this.sound.play('explosion_crunch_0', { volume: 3.0 });
-                this.showShipMessage('ASTEROID SALVO!');
-                break;
+                return { used: true, message: 'ASTEROID SALVO!' };
             }
+            case 'shieldPulse':
             default:
                 this.hasShield = true;
                 this.player.setTint(0x00aaff);
@@ -1375,9 +1419,8 @@ class MainGameScene extends Phaser.Scene {
                     }
                 });
                 this.sound.play('shield_sound');
-                this.showShipMessage('SHIELD PULSE!');
+                return { used: true, message: 'SHIELD PULSE!' };
         }
-        this.updateSpecialText();
     }
 
     spawnTripleHelpers() {
@@ -1726,6 +1769,8 @@ class MainGameScene extends Phaser.Scene {
 
 
     update() {
+        // Runs before any early return below, so spent bullets are always removed.
+        destroyBulletsAtSpawnLine(this.bullets);
         if (this.tutorialGuideContainer) {
             this.player.setVelocityX(0);
             return;
@@ -1842,6 +1887,7 @@ class PauseScene extends Phaser.Scene {
     constructor() { super('PauseScene'); }
 
     create() {
+        this.useSpawnWidthFit = true; // Same enlarged zoom as the Main Game so the pause screen matches it
         fitPlayfieldCamera(this);
         this.add.rectangle(400, 300, 800, 600, 0x000000, 0.72);
         this.add.text(400, 250, 'Ⅱ', {
